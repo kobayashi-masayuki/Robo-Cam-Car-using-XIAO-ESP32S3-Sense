@@ -11,8 +11,8 @@
 #define CAMERA_MODEL_XIAO_ESP32S3
 
 
-const char* ssid = "robocam";   //Enter SSID WIFI Name
-const char* password = "techiesms";   //Enter WIFI Password
+const char* ssid = "robocam-k";   //Enter SSID WIFI Name
+const char* password = "test-koba";   //Enter WIFI Password
 
 
 #if defined(CAMERA_MODEL_WROVER_KIT)
@@ -318,18 +318,21 @@ const char* password = "techiesms";   //Enter WIFI Password
 extern int gpLb =  D6; // Left 1
 extern int gpLf = D5; // Left 2
 extern int gpRb = D8; // Right 1
-extern int gpRf = D10; // Right 2
-extern int gpLed =  D9; // Light
+extern int gpRf = D7; // Right 2
+extern int gpGreen =  D9; // Light
+extern int gpRed =  D1; // Light
 extern String WiFiAddr = "";
 
 void startCameraServer();
 WiFiServer server(81);
 
-
+unsigned long preMillis = 0;  
+unsigned long interval = 1000;
 
 void setup()
 {
   Serial.begin(115200);
+  pinMode(A0, INPUT);
   Serial.setDebugOutput(true);
   Serial.println();
 
@@ -338,14 +341,16 @@ void setup()
   pinMode(gpLf, OUTPUT); //Left Forward
   pinMode(gpRb, OUTPUT); //Right Forward
   pinMode(gpRf, OUTPUT); //Right Backward
-  pinMode(gpLed, OUTPUT); //Light
+  pinMode(gpGreen, OUTPUT); //Light
+  pinMode(gpRed, OUTPUT); //Light
 
   //initialize
   digitalWrite(gpLb, LOW);
   digitalWrite(gpLf, LOW);
   digitalWrite(gpRb, LOW);
   digitalWrite(gpRf, LOW);
-  digitalWrite(gpLed, LOW);
+  digitalWrite(gpGreen, LOW);
+  digitalWrite(gpRed, LOW);
 
   camera_config_t config;
   config.ledc_channel = LEDC_CHANNEL_0;
@@ -410,4 +415,18 @@ void setup()
 void loop() {
   // put your main code here, to run repeatedly:
 
+  unsigned long curMillis = millis();
+
+  if(curMillis - preMillis > interval) {
+    uint32_t Vbatt = 0;
+    for(int i = 0; i < 16; i++) {
+      Vbatt = Vbatt + analogReadMilliVolts(A0); // ADC with correction   
+    }
+    float Vbattf = 2 * Vbatt / 16 / 1000.0;     // attenuation ratio 1/2, mV --> V
+    Serial.println(Vbattf, 3);
+    if(Vbattf < 3.3) {
+      digitalWrite(gpRed, HIGH);
+    }
+    preMillis = curMillis;   
+  }
 }

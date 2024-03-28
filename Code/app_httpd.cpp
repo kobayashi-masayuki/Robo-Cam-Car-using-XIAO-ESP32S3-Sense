@@ -22,7 +22,7 @@ extern int gpLb;
 extern int gpLf;
 extern int gpRb;
 extern int gpRf;
-extern int gpLed;
+extern int gpGreen;
 extern String WiFiAddr;
 
 void WheelAct(int nLf, int nLb, int nRf, int nRb);
@@ -308,25 +308,29 @@ static esp_err_t status_handler(httpd_req_t *req){
 static esp_err_t index_handler(httpd_req_t *req){
     httpd_resp_set_type(req, "text/html");
     String page = "";
-     page += "<meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0\">\n";
- page += "<script>var xhttp = new XMLHttpRequest();</script>";
- page += "<script>function getsend(arg) { xhttp.open('GET', arg +'?' + new Date().getTime(), true); xhttp.send() } </script>";
- //page += "<p align=center><IMG SRC='http://" + WiFiAddr + ":81/stream' style='width:280px;'></p><br/><br/>";
- page += "<p align=center><IMG SRC='http://" + WiFiAddr + ":81/stream' style='width:300px; transform:rotate(180deg);'></p><br/><br/>";
- 
- page += "<p align=center> <button style=background-color:lightgrey;width:90px;height:80px onmousedown=getsend('go') onmouseup=getsend('stop') ontouchstart=getsend('go') ontouchend=getsend('stop') ><b>Forward</b></button> </p>";
- page += "<p align=center>";
- page += "<button style=background-color:lightgrey;width:90px;height:80px; onmousedown=getsend('left') onmouseup=getsend('stop') ontouchstart=getsend('left') ontouchend=getsend('stop')><b>Left</b></button>&nbsp;";
- page += "<button style=background-color:indianred;width:90px;height:80px onmousedown=getsend('stop') onmouseup=getsend('stop')><b>Stop</b></button>&nbsp;";
- page += "<button style=background-color:lightgrey;width:90px;height:80px onmousedown=getsend('right') onmouseup=getsend('stop') ontouchstart=getsend('right') ontouchend=getsend('stop')><b>Right</b></button>";
- page += "</p>";
+    page += "<meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0\">\n";
+    page += "<script>var xhttp = new XMLHttpRequest();</script>";
+    page += "<script>function getsend(arg) { xhttp.open('GET', arg +'?' + new Date().getTime(), true); xhttp.send() } </script>";
+    //page += "<p align=center><IMG SRC='http://" + WiFiAddr + ":81/stream' style='width:280px;'></p><br/><br/>";
+    page += "<p align=center><IMG SRC='http://" + WiFiAddr + ":81/stream' style='width:300px; transform:rotate(180deg);'></p><br/><br/>";
+    
+    page += "<p align=center> <button style=background-color:lightgrey;width:90px;height:80px onmousedown=getsend('go') onmouseup=getsend('stop') ontouchstart=getsend('go') ontouchend=getsend('stop') ><b>Forward</b></button> </p>";
+    page += "<p align=center>";
+    page += "<button style=background-color:lightgrey;width:90px;height:80px; onmousedown=getsend('left') onmouseup=getsend('stop') ontouchstart=getsend('left') ontouchend=getsend('stop')><b>Left</b></button>&nbsp;";
+    page += "<button style=background-color:indianred;width:90px;height:80px onmousedown=getsend('stop') onmouseup=getsend('stop')><b>Stop</b></button>&nbsp;";
+    page += "<button style=background-color:lightgrey;width:90px;height:80px onmousedown=getsend('right') onmouseup=getsend('stop') ontouchstart=getsend('right') ontouchend=getsend('stop')><b>Right</b></button>";
+    page += "</p>";
 
- page += "<p align=center><button style=background-color:lightgrey;width:90px;height:80px onmousedown=getsend('back') onmouseup=getsend('stop') ontouchstart=getsend('back') ontouchend=getsend('stop') ><b>Backward</b></button></p>";  
+    page += "<p align=center><button style=background-color:lightgrey;width:90px;height:80px onmousedown=getsend('back') onmouseup=getsend('stop') ontouchstart=getsend('back') ontouchend=getsend('stop') ><b>Backward</b></button></p>";  
 
- page += "<p align=center>";
- page += "<button style=background-color:yellow;width:140px;height:40px onmousedown=getsend('ledon')><b>Light ON</b></button>";
- page += "<button style=background-color:yellow;width:140px;height:40px onmousedown=getsend('ledoff')><b>Light OFF</b></button>";
- page += "</p>";
+    page += "<p align=center>";
+    page += "<button style=background-color:yellow;width:140px;height:40px onmousedown=getsend('ledon')><b>Light ON</b></button>";
+    page += "<button style=background-color:yellow;width:140px;height:40px onmousedown=getsend('ledoff')><b>Light OFF</b></button>";
+    page += "</p>";
+    // voltageを表示
+    // page += "<p align=center>";
+    // page += "<button style=background-color:blue;width:140px;height:40px onmousedown=getsend('voltage')><b>Voltage Get</b></button>";
+    // page += "</p>";
  
     return httpd_resp_send(req, &page[0], strlen(&page[0]));
 }
@@ -365,16 +369,33 @@ static esp_err_t stop_handler(httpd_req_t *req){
 }
 
 static esp_err_t ledon_handler(httpd_req_t *req){
-    digitalWrite(gpLed, HIGH);
+    digitalWrite(gpGreen, HIGH);
     Serial.println("LED ON");
     httpd_resp_set_type(req, "text/html");
     return httpd_resp_send(req, "OK", 2);
 }
 static esp_err_t ledoff_handler(httpd_req_t *req){
-    digitalWrite(gpLed, LOW);
+    digitalWrite(gpGreen, LOW);
     Serial.println("LED OFF");
     httpd_resp_set_type(req, "text/html");
     return httpd_resp_send(req, "OK", 2);
+}
+static esp_err_t voltage_handler(httpd_req_t *req){
+    uint32_t Vbatt = 0;
+    for(int i = 0; i < 16; i++) {
+      Vbatt = Vbatt + analogReadMilliVolts(A0); // ADC with correction   
+    }
+    float Vbattf = 2 * Vbatt / 16 / 1000.0;     // attenuation ratio 1/2, mV --> V
+    float voltage = Vbattf * (5.0 / 1023.0);
+    char str[4];
+    dtostrf(voltage, 4, 2, str);
+    Serial.println("Voltage: " + String(str) + "V");
+    httpd_resp_set_type(req, "text/html");
+    return httpd_resp_send(req, str, strlen(str));
+}
+static esp_err_t test_handler(httpd_req_t *req){
+    httpd_resp_set_type(req, "text/html");
+    return httpd_resp_send(req, "test OK", 2);
 }
 
 void startCameraServer(){
@@ -421,7 +442,7 @@ void startCameraServer(){
         .handler   = ledon_handler,
         .user_ctx  = NULL
     };
-    
+
     httpd_uri_t ledoff_uri = {
         .uri       = "/ledoff",
         .method    = HTTP_GET,
@@ -463,6 +484,18 @@ void startCameraServer(){
         .handler   = stream_handler,
         .user_ctx  = NULL
     };
+    httpd_uri_t voltage_uri = {
+        .uri       = "/voltage",
+        .method    = HTTP_GET,
+        .handler   = voltage_handler,
+        .user_ctx  = NULL
+    };
+    httpd_uri_t test_uri = {
+        .uri       = "/test",
+        .method    = HTTP_GET,
+        .handler   = test_handler,
+        .user_ctx  = NULL
+    };
 
 
     ra_filter_init(&ra_filter, 20);
@@ -476,6 +509,12 @@ void startCameraServer(){
         httpd_register_uri_handler(camera_httpd, &right_uri);
         httpd_register_uri_handler(camera_httpd, &ledon_uri);
         httpd_register_uri_handler(camera_httpd, &ledoff_uri);
+        httpd_register_uri_handler(camera_httpd, &voltage_uri);
+        httpd_register_uri_handler(camera_httpd, &status_uri);
+        httpd_register_uri_handler(camera_httpd, &cmd_uri);
+        httpd_register_uri_handler(camera_httpd, &capture_uri);
+        httpd_register_uri_handler(camera_httpd, &stream_uri);
+        httpd_register_uri_handler(camera_httpd, &test_uri);
     }
 
     config.server_port += 1;
