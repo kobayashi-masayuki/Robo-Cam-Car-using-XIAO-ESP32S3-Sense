@@ -315,12 +315,12 @@ const char* password = "test-koba";   //Enter WIFI Password
 #endif
 
 // GPIO Setting
-extern int gpLb =  D6; // Left 1
-extern int gpLf = D5; // Left 2
-extern int gpRb = D8; // Right 1
-extern int gpRf = D7; // Right 2
-extern int gpGreen =  D9; // Light
-extern int gpRed =  D1; // Light
+extern int gpLb =  D7; // Left 1
+extern int gpLf = D8; // Left 2
+extern int gpRb = D9; // Right 1
+extern int gpRf = D10; // Right 2
+extern int gpGreen =  D2; // Light
+extern int gpRed =  D3; // Light
 extern String WiFiAddr = "";
 
 void startCameraServer();
